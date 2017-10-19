@@ -6,4 +6,4 @@ module Construction
 
 import           Construction.Internal.Functions (alpha, beta, bound, eta, free,
                                                   fresh, reduce, substitute)
-import           Construction.Internal.Types     (Name, Term)
+import           Construction.Internal.Types     (Name, Term(..))

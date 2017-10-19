@@ -40,11 +40,14 @@ bound Var{}   = empty
 bound App{..} = bound algo `union` bound arg
 bound Lam{..} = variable `insert` bound body
 
--- a[n := b] - substiturion
+-- a[n := b] - substitution
 substitute :: Term -> Name -> Term -> Term
 substitute v@Var{..} n b | var == n  = b
                          | otherwise = v
-substitute _ _ _ = undefined -- here you have to implement another 2 cases
+substitute (App algo arg) n b = App (substitute algo n b) $ substitute arg n b
+substitute l@(Lam variable body) n b | variable == n = l
+                                     | variable `notMember` free b = Lam variable $ substitute body n b
+                                     | otherwise = Lam variable $ substitute body n $ substitute b variable $ Var $ fresh $ free b
 
 -- | alpha reduction
 alpha :: Term -> Set Name -> Term
