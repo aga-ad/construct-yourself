@@ -8,7 +8,7 @@
 module Construction.Internal.Functions
   ( Context (..)        -- make restrictions is good practice. As you can see here,
   , fresh, free, bound  -- we make "public" not all functions, but only Context, fresh, ...
-  , reduce, substitute, alpha, beta, eta
+  , reduce, substitute, alpha, beta, eta, equals, notEquals
   )where
 
 import           Construction.Internal.Types (Name, Term (..))
@@ -63,11 +63,14 @@ alpha l@(Lam variable body) s | variable `notMember` s = Lam variable $ alpha bo
 
 -- | beta reduction
 beta :: Term -> Term
-beta = undefined
+beta (App (Lam variable body) arg) = substitute body variable arg
+beta t = t
 
 -- | eta reduction
 eta :: Term -> Term
-eta = undefined
+eta l@(Lam var1 (App m (Var var2))) | var1 == var2 = m
+                                    | otherwise = l
+eta t = t
 
 -- | reduce term
 reduce :: Term -> Term
@@ -75,3 +78,17 @@ reduce term = let term' = beta term
               in if term' == term
                  then eta term
                  else reduce term'
+
+-- Be careful with it. No shit like (\x.x x) (\x.x x)
+equals :: Term -> Term -> Bool
+equals t1 t2 = equals' (reduce t1) (reduce t2)
+
+equals' (Var v1) (Var v2) | v1 == v2 = True
+                          | otherwise = False
+equals' (App a1 b1) (App a2 b2) = a1 `equals` a2 && b1 `equals` b2
+equals' l1@(Lam var1 body1) l2@(Lam var2 body2) = (substitute body1 var1 newVar) `equals` (substitute body2 var2 newVar) where
+                                                    newVar = Var $ fresh ((free l1) `union` (free l2))
+equals' _ _ = False
+
+notEquals :: Term -> Term -> Bool
+notEquals t1 t2 = not $ equals t1 t2

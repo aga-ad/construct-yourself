@@ -2,7 +2,7 @@
 
 module Main where
 
-import           Construction (Name, Term(..), bound, free, fresh, substitute)
+import           Construction (Name, Term(..), bound, free, fresh, substitute, reduce, alpha, beta, eta, equals, notEquals)
 import           Test.Hspec
 import Data.Set
 
@@ -13,6 +13,10 @@ main = hspec $ do
     describe "Substitution test" $ do
         testSubstitution1
         testSubstitution2
+    describe "Full test" $ do
+        test1
+        test2
+        test3
 
 testFresh :: SpecWith ()
 testFresh = do
@@ -37,7 +41,33 @@ testSubstitution2 = do
     let a0 = substitute a "b" $ Var "a"
     let b0 = substitute a "a" $ Var "b"
     it "substitution 2" $
-        boundedA == boundedA'
-     && b0 == b
-     &&  a0 == a
-     && (substitute a0 "c" b0) == (substitute a "c" b)
+        boundedA `equals` boundedA'
+     && (reduce b0) `equals` (reduce b)
+     && a0 `equals` a
+     && (substitute a0 "c" b0) `equals` (substitute a "c" b)
+
+
+test1 :: SpecWith ()
+test1 = do
+    let boundedA = Lam "a" $ Var "a"
+    let boundedB = Lam "b" $ Var "b"
+    it "a.a == b.b" $
+        boundedA `equals` boundedB
+
+test2 :: SpecWith ()
+test2 = do
+    let a = Lam "a" $ Var "a"
+    let aa = App a a
+    let aaa = App a aa
+    let aaaa = App a aaa
+    it "(a.a) ((a.a) ((a.a) (a.a))) == a.a" $
+        aaaa `equals` a
+
+test3 :: SpecWith ()
+test3 = do
+    let a = Lam "a" $ Lam "b" $ Var "c"
+    let b = Lam "d" $ Lam "e" $ Var "c"
+    let c = Lam "d" $ Lam "e" $ Var "f"
+    it "a.b.c == d.e.c and a.b.c != d.e.f" $
+        a `equals` b
+     && a `notEquals` c
