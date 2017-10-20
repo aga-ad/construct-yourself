@@ -28,14 +28,16 @@ testSubstitution1 = do
 
 testSubstitution2 :: SpecWith ()
 testSubstitution2 = do
-    let bounedA = Lam "a" $ Var "a"
-    let bounedB = Lam "b" $ Var "b"
-    let t = App bounedA bounedB
+    let boundedA = Lam "a" $ Var "a"
+    let boundedA' = substitute boundedA "a" $ Var "b"
+    let boundedB = Lam "b" $ Var "b"
+    let t = App boundedA boundedB
     let a = App t $ App t $ App (Var "a") $ Var "c"
     let b = App t $ App t $ App (Var "b") $ Var "c"
     let a0 = substitute a "b" $ Var "a"
     let b0 = substitute a "a" $ Var "b"
     it "substitution 2" $
-        b0 == b &&
-        a0 == a &&
-        (substitute a0 "c" b0) == (substitute a "c" b)
+        boundedA == boundedA'
+     && b0 == b
+     &&  a0 == a
+     && (substitute a0 "c" b0) == (substitute a "c" b)

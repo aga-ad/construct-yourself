@@ -42,16 +42,24 @@ bound Lam{..} = variable `insert` bound body
 
 -- a[n := b] - substitution
 substitute :: Term -> Name -> Term -> Term
-substitute v@Var{..} n b | var == n  = b
-                         | otherwise = v
+substitute v@Var{..} n b | var == n = b
+                          | otherwise = v
 substitute (App algo arg) n b = App (substitute algo n b) $ substitute arg n b
 substitute l@(Lam variable body) n b | variable == n = l
-                                     | variable `notMember` free b = Lam variable $ substitute body n b
-                                     | otherwise = Lam variable $ substitute body n $ substitute b variable $ Var $ fresh $ free b
+                                     | variable `member` frees = substitute (alpha l frees) n b
+                                     | otherwise = Lam variable (substitute body n b) where
+                                         frees = free b
 
 -- | alpha reduction
 alpha :: Term -> Set Name -> Term
-alpha = undefined
+alpha v@Var{..} s = v
+alpha (App algo arg) s = App (alpha algo s) $ alpha arg s
+alpha l@(Lam variable body) s | variable `notMember` s = Lam variable $ alpha body $ variable `insert` s
+                              | otherwise = let newVar = fresh $ s `union` (free l)
+                                                newBody = substitute body variable $ Var newVar
+                                                in Lam newVar $ alpha newBody s
+
+
 
 -- | beta reduction
 beta :: Term -> Term
