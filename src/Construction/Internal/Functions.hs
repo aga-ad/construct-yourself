@@ -63,12 +63,14 @@ alpha l@(Lam variable body) s | variable `notMember` s = Lam variable $ alpha bo
 
 -- | beta reduction
 beta :: Term -> Term
-beta (App (Lam variable body) arg) = substitute body variable arg
-beta t = t
+beta (App (Lam variable body) arg) = substitute (beta body) variable (beta arg)
+beta (App algo arg) = App (beta algo) (beta arg)
+beta (Lam variable body) = Lam variable $ beta body
+beta v = v
 
 -- | eta reduction
 eta :: Term -> Term
-eta l@(Lam var1 (App m (Var var2))) | var1 == var2 = m
+eta l@(Lam var1 (App m (Var var2))) | var1 == var2 && var1 `notMember` (free m) = m
                                     | otherwise = l
 eta t = t
 
