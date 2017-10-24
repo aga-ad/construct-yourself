@@ -131,7 +131,7 @@ testAlpha = do
     it "#4" $ alpha lamId (fromList ["x", "x0", "x1"]) `shouldBe` (Lam "x2" varX2)
 
     let term = (Lam "x2" (Lam "x" appXX1))
-    it "#5" $ alpha term (fromList ["x2"]) `shouldBe` (Lam "x0" (Lam "x0" (App (Var "x0") (Var "x1"))))
+    it "#5" $ alpha term (fromList ["x2"]) `shouldBe` (Lam "x0" (Lam "x" (App (Var "x") (Var "x1"))))
     it "#6" $ alpha term (fromList ["x"]) `shouldBe` (Lam "x2" (Lam "x0" (App (Var "x0") (Var "x1"))))
     it "#7" $ alpha term (fromList ["x", "x2"]) `shouldBe` (Lam "x0" (Lam "x0" (App (Var "x0") (Var "x1"))))
 
