@@ -74,12 +74,38 @@ eta l@(Lam var1 (App m (Var var2))) | var1 == var2 && var1 `notMember` (free m) 
                                     | otherwise = l
 eta t = t
 
+
+
+-- stupidEq :: Term -> Term -> Bool
+-- stupidEq (Lam v1 b1) (Lam v2 b2) = (v1 == v2) && (b1 `stupidEq` b2)
+-- stupidEq (Var v1) (Var v2) = v1 == v2
+-- stupidEq (App algo1 arg1) (App algo2 arg2) = (algo1 `stupidEq` algo2) && (arg1 `stupidEq` arg2)
+
+
 -- | reduce term
 reduce :: Term -> Term
 reduce term = let term' = beta term
               in if term' == term
                  then eta term
                  else reduce term'
+
+
+
+
+
+
+instance Eq Term where
+-- (==) :: Term -> Term -> Bool
+  (==) (Lam v1 b1) (Lam v2 b2) = (substitute b1 v1 freshVariable) == (substitute b2 v2 freshVariable) where
+                                  freshVariable = Var $ fresh (free b1 `union` free b2)
+  (==) (Var v1) (Var v2) = v1 == v2
+  (==) (App algo1 arg1) (App algo2 arg2) = (algo1 == algo2) && (arg1 == arg2)
+  (==) _ _ = False
+
+
+
+
+
 
 -- Be careful with it. No shit like (\x.x x) (\x.x x)
 equals :: Term -> Term -> Bool
