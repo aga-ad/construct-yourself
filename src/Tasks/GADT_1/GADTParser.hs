@@ -7,7 +7,7 @@ module Tasks.GADT_1.GADTParser where
 import           Data.Text              (pack)
 import           Tasks.GADT_1.GADTExpr
 import           Text.Parsec.Char       (char, digit, oneOf, space, string)
-import           Text.Parsec.Combinator (between, many1)
+import           Text.Parsec.Combinator (between, many1, chainl1)
 import           Text.Parsec.Language   (haskellDef)
 import           Text.Parsec.Prim       (many, parseTest, try, (<|>))
 import           Text.Parsec.Text       (Parser)
@@ -20,30 +20,37 @@ bLitP :: Parser (Lit Bool)
 bLitP = (\c -> BLit $ c == 'T') <$> oneOf "TF"
 
 iiLitP :: Parser (Expr Int)
-iiLitP = try $ spacedP $ Lit <$> iLitP
+iiLitP = Lit <$> iLitP
 
 bbLitP :: Parser (Expr Bool)
-bbLitP = try $ spacedP $ Lit <$> bLitP
+bbLitP = Lit <$> bLitP
 
 addP :: Parser (Expr Int)
-addP = try $ spacedP $ Add <$> ((iiLitP <|> bracketP iiLitP <|> bracketP addP) <* char '+') <*> parse
+addP = Add <$> ((tsP iiLitP <|> tsP (bracketP (tsP iiLitP)) <|> tsP (bracketP (tsP addP))) <* char '+') <*> parse
 
 leqP :: Parser (Expr Bool)
-leqP = try $ spacedP $ Leq <$> (parse <* char '<') <*> parse
+leqP = Leq <$> (parse <* char '<') <*> parse
 
 andP :: Parser (Expr Bool)
-andP = try $ spacedP $ And <$> ((bbLitP <|> leqP <|> bracketP bbLitP <|> bracketP leqP <|> bracketP andP) <* string "&&") <*> parse
-
-spacedP :: Parser a -> Parser a
-spacedP p = (many space *> p) <* many space
+andP = And <$> ((tsP bbLitP <|> tsP leqP <|> tsP (bracketP (tsP bbLitP)) <|> tsP (bracketP (tsP leqP)) <|> tsP (bracketP (tsP andP))) <* string "&&") <*> parse
 
 bracketP :: Parser a -> Parser a
-bracketP p = try $ spacedP $ between (char '(') (char ')') p
+bracketP = between (char '(') (char ')')
+
+tsP :: Parser a -> Parser a
+tsP p = try $ spacedP p where
+  spacedP :: Parser a -> Parser a
+  spacedP p = (many space *> p) <* many space
+
+unfolderP :: [Parser a] -> Parser a
+unfolderP lp = foldl (<|>) (head lp) (tail lp)
 
 class MyParse a where
   parse :: Parser (Expr a)
+  parse = unfolderP $ [tsP, \p -> tsP $ bracketP $ tsP p] <*> funcs
+  funcs :: [Parser (Expr a)]
 
 instance MyParse Int where
-  parse = addP <|> iiLitP <|> bracketP iiLitP <|> bracketP addP
+  funcs = [addP, iiLitP]
 instance MyParse Bool where
-  parse = andP <|> leqP <|> bbLitP<|> bracketP leqP <|> bracketP andP <|> bracketP bbLitP
+  funcs = [andP, leqP, bbLitP]
