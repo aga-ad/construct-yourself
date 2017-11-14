@@ -46,4 +46,4 @@ class MyParse a where
 instance MyParse Int where
   parse = addP <|> iiLitP <|> bracketP iiLitP <|> bracketP addP
 instance MyParse Bool where
-  parse = leqP <|> andP <|> bbLitP<|> bracketP leqP <|> bracketP andP <|> bracketP bbLitP
+  parse = andP <|> leqP <|> bbLitP<|> bracketP leqP <|> bracketP andP <|> bracketP bbLitP

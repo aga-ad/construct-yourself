@@ -9,8 +9,10 @@ import Data.Text
 import Tasks
 
 main :: IO ()
-main = hspec $
+main = hspec $ do
     describe "Task 1 test" parserTest
+    describe "My tests" myTest
+    describe "Hardcore tests" myHardcoreTest
 
 parserTest :: SpecWith ()
 parserTest = do
@@ -36,6 +38,62 @@ parserTest = do
   it "#19" $ checkWithEval parse "3 + 42 < 43" $ BLit False
   it "#20" $ checkWithEval parse "42 + 2 < 49 && T" $ BLit True
 
+myTest :: SpecWith ()
+myTest = do
+  it "1.1" $ checkWithEval parse "1 < 2 && 2 < 3 && 3 < 4" $ BLit True
+  it "1.2" $ checkWithEval parse "2 < 1 && 2 < 3 && 3 < 4" $ BLit False
+  it "1.3" $ checkWithEval parse "1 < 2 && 3 < 2 && 3 < 4" $ BLit False
+  it "1.4" $ checkWithEval parse "1 < 2 && 2 < 3 && 4 < 3" $ BLit False
+  it "2.1" $ checkWithEval parse "(1 < 2 && 2 < 3) && 3 < 4" $ BLit True
+  it "2.2" $ checkWithEval parse "(2 < 1 && 2 < 3) && 3 < 4" $ BLit False
+  it "2.3" $ checkWithEval parse "(1 < 2 && 3 < 2) && 3 < 4" $ BLit False
+  it "2.4" $ checkWithEval parse "(1 < 2 && 2 < 3) && 4 < 3" $ BLit False
+  it "3.1" $ checkWithEval parse "1 < 2 && (2 < 3 && 3 < 4)" $ BLit True
+  it "3.2" $ checkWithEval parse "2 < 1 && (2 < 3 && 3 < 4)" $ BLit False
+  it "3.3" $ checkWithEval parse "1 < 2 && (3 < 2 && 3 < 4)" $ BLit False
+  it "3.4" $ checkWithEval parse "1 < 2 && (2 < 3 && 4 < 3)" $ BLit False
+  it "4.1" $ checkWithEval parse "8 + 20 + 200" $ ILit 228
+  it "4.2" $ checkWithEval parse "(8 + 20) + 200" $ ILit 228
+  it "4.3" $ checkWithEval parse "8 + (20 + 200)" $ ILit 228
+
+myHardcoreTest :: SpecWith ()
+myHardcoreTest = do
+  it "1.1" $ checkWithEval parse "1 < 1+1 && 1+1 < 1+1+1 && 1+1+1 < 1+1+1+1" $ BLit True
+  it "1.2" $ checkWithEval parse "1+1 < 1 && 1+1 < 1+1+1 && 1+1+1 < 1+1+1+1" $ BLit False
+  it "1.3" $ checkWithEval parse "1 < 1+1 && 1+1+1 < 1+1 && 1+1+1 < 1+1+1+1" $ BLit False
+  it "1.4" $ checkWithEval parse "1 < 1+1 && 1+1 < 1+1+1 && 1+1+1+1 < 1+1+1" $ BLit False
+  it "2.1" $ checkWithEval parse "(1 < 1+1 && 1+1 < 1+1+1) && 1+1+1 < 1+1+1+1" $ BLit True
+  it "2.2" $ checkWithEval parse "(1+1 < 1 && 1+1 < 1+1+1) && 1+1+1 < 1+1+1+1" $ BLit False
+  it "2.3" $ checkWithEval parse "(1 < 1+1 && 1+1+1 < 1+1) && 1+1+1 < 1+1+1+1" $ BLit False
+  it "2.4" $ checkWithEval parse "(1 < 1+1 && 1+1 < 1+1+1) && 1+1+1+1 < 1+1+1" $ BLit False
+  it "3.1" $ checkWithEval parse "1 < 1+1 && (1+1 < 1+1+1 && 1+1+1 < 1+1+1+1)" $ BLit True
+  it "3.2" $ checkWithEval parse "1+1 < 1 && (1+1 < 1+1+1 && 1+1+1 < 1+1+1+1)" $ BLit False
+  it "3.3" $ checkWithEval parse "1 < 1+1 && (1+1+1 < 1+1 && 1+1+1 < 1+1+1+1)" $ BLit False
+  it "3.4" $ checkWithEval parse "1 < 1+1 && (1+1 < 1+1+1 && 1+1+1+1 < 1+1+1)" $ BLit False
+  it "no space 1.1" $ checkWithEval parse "1<1+1&&1+1<1+1+1&&1+1+1<1+1+1+1" $ BLit True
+  it "no space 1.2" $ checkWithEval parse "1+1<1&&1+1<1+1+1&&1+1+1<1+1+1+1" $ BLit False
+  it "no space 1.3" $ checkWithEval parse "1<1+1&&1+1+1<1+1&&1+1+1<1+1+1+1" $ BLit False
+  it "no space 1.4" $ checkWithEval parse "1<1+1&&1+1<1+1+1&&1+1+1+1<1+1+1" $ BLit False
+  it "no space 2.1" $ checkWithEval parse "(1<1+1&&1+1<1+1+1)&&1+1+1<1+1+1+1" $ BLit True
+  it "no space 2.2" $ checkWithEval parse "(1+1<1&&1+1<1+1+1)&&1+1+1<1+1+1+1" $ BLit False
+  it "no space 2.3" $ checkWithEval parse "(1<1+1&&1+1+1<1+1)&&1+1+1<1+1+1+1" $ BLit False
+  it "no space 2.4" $ checkWithEval parse "(1<1+1&&1+1<1+1+1)&&1+1+1+1<1+1+1" $ BLit False
+  it "no space 3.1" $ checkWithEval parse "1<1+1&&(1+1<1+1+1&&1+1+1<1+1+1+1)" $ BLit True
+  it "no space 3.2" $ checkWithEval parse "1+1<1&&(1+1<1+1+1&&1+1+1<1+1+1+1)" $ BLit False
+  it "no space 3.3" $ checkWithEval parse "1<1+1&&(1+1+1<1+1&&1+1+1<1+1+1+1)" $ BLit False
+  it "no space 3.4" $ checkWithEval parse "1<1+1&&(1+1<1+1+1&&1+1+1+1<1+1+1)" $ BLit False
+  it "spaced 1.1" $ checkWithEval parse " 1 < 1  +  1  &&  1  +  1 < 1  +  1  +  1  &&  1  +  1  +  1 < 1  +  1  +  1  +  1 " $ BLit True
+  it "spaced 1.2" $ checkWithEval parse " 1  +  1 < 1  &&  1  +  1 < 1  +  1  +  1  &&  1  +  1  +  1 < 1  +  1  +  1  +  1 " $ BLit False
+  it "spaced 1.3" $ checkWithEval parse " 1 < 1  +  1  &&  1  +  1  +  1 < 1  +  1  &&  1  +  1  +  1 < 1  +  1  +  1  +  1 " $ BLit False
+  it "spaced 1.4" $ checkWithEval parse " 1 < 1  +  1  &&  1  +  1 < 1  +  1  +  1  &&  1  +  1  +  1  +  1 < 1  +  1  +  1 " $ BLit False
+  it "spaced 2.1" $ checkWithEval parse " ( 1 < 1  +  1  &&  1  +  1 < 1  +  1  +  1 )   &&  1  +  1  +  1 < 1  +  1  +  1  +  1 " $ BLit True
+  it "spaced 2.2" $ checkWithEval parse " ( 1  +  1 < 1  &&  1  +  1 < 1  +  1  +  1 )   &&  1  +  1  +  1 < 1  +  1  +  1  +  1 " $ BLit False
+  it "spaced 2.3" $ checkWithEval parse " ( 1 < 1  +  1  &&  1  +  1  +  1 < 1  +  1 )   &&  1  +  1  +  1 < 1  +  1  +  1  +  1 " $ BLit False
+  it "spaced 2.4" $ checkWithEval parse " ( 1 < 1  +  1  &&  1  +  1 < 1  +  1  +  1 )   &&  1  +  1  +  1  +  1 < 1  +  1  +  1 " $ BLit False
+  it "spaced 3.1" $ checkWithEval parse " 1 < 1  +  1  &&   ( 1  +  1 < 1  +  1  +  1  &&  1  +  1  +  1 < 1  +  1  +  1  +  1 ) " $ BLit True
+  it "spaced 3.2" $ checkWithEval parse " 1  +  1 < 1  &&   ( 1  +  1 < 1  +  1  +  1  &&  1  +  1  +  1 < 1  +  1  +  1  +  1 ) " $ BLit False
+  it "spaced 3.3" $ checkWithEval parse " 1 < 1  +  1  &&   ( 1  +  1  +  1 < 1  +  1  &&  1  +  1  +  1 < 1  +  1  +  1  +  1 ) " $ BLit False
+  it "spaced 3.4" $ checkWithEval parse " 1 < 1  +  1  &&   ( 1  +  1 < 1  +  1  +  1  &&  1  +  1  +  1  +  1 < 1  +  1  +  1 ) " $ BLit False
 
 check :: (Eq a, Show a) => Parser a -> Text -> a -> Expectation
 check parser inputStr result =
