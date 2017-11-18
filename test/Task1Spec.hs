@@ -94,6 +94,9 @@ myHardcoreTest = do
   it "spaced 3.2" $ checkWithEval parse " 1  +  1 < 1  &&   ( 1  +  1 < 1  +  1  +  1  &&  1  +  1  +  1 < 1  +  1  +  1  +  1 ) " $ BLit False
   it "spaced 3.3" $ checkWithEval parse " 1 < 1  +  1  &&   ( 1  +  1  +  1 < 1  +  1  &&  1  +  1  +  1 < 1  +  1  +  1  +  1 ) " $ BLit False
   it "spaced 3.4" $ checkWithEval parse " 1 < 1  +  1  &&   ( 1  +  1 < 1  +  1  +  1  &&  1  +  1  +  1  +  1 < 1  +  1  +  1 ) " $ BLit False
+  it "brackets 1.1" $ checkWithEval parse "((((((2))) + 3) < 49) && F)" $ BLit False
+  it "brackets 1.2" $ checkWithEval parse "((2 < 3)) && F" $ BLit False
+
 
 check :: (Eq a, Show a) => Parser a -> Text -> a -> Expectation
 check parser inputStr result =

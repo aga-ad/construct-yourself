@@ -47,10 +47,12 @@ class MyParse a where
   parse = makeParser funcs
 
   makeParser :: [Parser (Expr a)] -> Parser (Expr a)
-  makeParser lp = alternativerP $ ([tsP] <*> lp) ++ ([\p -> tsP $ bracketP $ tsP p] <*> funcs) where
+  -- makeParser lp = alternativerP $ ([tsP] <*> lp) ++ ([\p -> tsP $ bracketP $ tsP p] <*> funcs) where
+  makeParser lp = alternativerP $ ([tsP] <*> lp) ++ ([\p -> tsP $ bracketedP $ tsP p] <*> funcs) where
     bracketP = between (char '(') (char ')')
+    bracketedP p = (try $ bracketP $ spacedP p) <|> (bracketP $ spacedP $ bracketedP $ spacedP p)
     alternativerP [x] = x
-    alternativerP (x:xs) = x <|> alternativerP xs
+    alternativerP (x:xs) = (tsP x) <|> alternativerP xs
     tsP p = try $ spacedP p
     spacedP :: Parser a -> Parser a
     spacedP p = (many space *> p) <* many space
