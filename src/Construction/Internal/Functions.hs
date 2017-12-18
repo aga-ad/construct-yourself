@@ -6,10 +6,10 @@
 
 
 module Construction.Internal.Functions
-  ( Context (..)        -- make restrictions is good practice. As you can see here,
+  ( Context (..)        -- make restrictions is good practice. As you can see here
   , fresh, free, bound  -- we make "public" not all functions, but only Context, fresh, ...
-  , reduce, substitute, alpha, beta, eta, equals, notEquals
-  )where
+  , reduce, substitute, alpha, beta, eta
+  ) where
 
 import           Construction.Internal.Types (Name, Term (..))
 import           Data.Set                    (Set, delete, empty, insert,
@@ -40,46 +40,52 @@ bound Var{}   = empty
 bound App{..} = bound algo `union` bound arg
 bound Lam{..} = variable `insert` bound body
 
--- a[n := b] - substitution
-substitute :: Term -> Name -> Term -> Term
-substitute v@Var{..} n b | var == n = b
-                          | otherwise = v
-substitute (App algo arg) n b = App (substitute algo n b) $ substitute arg n b
-substitute l@(Lam variable body) n b | variable == n = l
-                                     | variable `member` frees = substitute (alpha l frees) n b
-                                     | otherwise = Lam variable (substitute body n b) where
-                                         frees = free b
 
--- | alpha reduction
 alpha :: Term -> Set Name -> Term
-alpha v@Var{..} s = v
-alpha (App algo arg) s = App (alpha algo s) $ alpha arg s
-alpha l@(Lam variable body) s | variable `notMember` s = Lam variable $ alpha body $ variable `insert` s
-                              | otherwise = let newVar = fresh $ s `union` (free l)
-                                                newBody = substitute body variable $ Var newVar
-                                                in Lam newVar $ alpha newBody s
+alpha Lam{..} conflicts | hasConflict = let all_conflicts = conflicts `union` free body
+                                            n_variable = fresh all_conflicts
+                                            n_body = substitute body variable (Var n_variable)
+                                        in Lam n_variable n_body
+                        | otherwise   = Lam variable (alpha body conflicts)
+                      where hasConflict = variable `member` conflicts
+alpha App{..} conflicts = App (alpha algo conflicts) (alpha arg conflicts)
+alpha var _ = var
 
-
-
--- | beta reduction
 beta :: Term -> Term
-beta (App (Lam variable body) arg) = substitute (beta body) variable (beta arg)
-beta (App algo arg) = App (beta algo) (beta arg)
-beta (Lam variable body) = Lam variable $ beta body
-beta v = v
+beta (App (Lam n e1) e2) = substitute e1 n e2
+beta App{..} = let b_algo = beta algo
+               in if b_algo /= algo then App b_algo arg else App algo (beta arg)
+beta (Lam n e) = Lam n (beta e)
+beta var = var
 
--- | eta reduction
 eta :: Term -> Term
-eta l@(Lam var1 (App m (Var var2))) | var1 == var2 && var1 `notMember` (free m) = m
-                                    | otherwise = l
-eta t = t
+eta l@(Lam v (App algo (Var e))) | hasEta    = algo
+                                 | otherwise = l
+  where hasEta = v == e && v `notMember` free algo
+eta term = term
 
 
+substitute :: Term -> Name -> Term -> Term
+substitute v@Var{..} n e | var == n  = e
+                         | otherwise = v
+substitute   App{..} n e = App (substitute algo n e) (substitute arg n e)
+substitute l@Lam{..} n e | variable == n = l
+                         | otherwise = let cond   = variable `member` free e
+                                           a_lam  = alpha l (free e)
+                                           s_body = substitute body n e
+                                       in if cond then substitute a_lam n e
+                                                  else Lam variable s_body
 
--- stupidEq :: Term -> Term -> Bool
--- stupidEq (Lam v1 b1) (Lam v2 b2) = (v1 == v2) && (b1 `stupidEq` b2)
--- stupidEq (Var v1) (Var v2) = v1 == v2
--- stupidEq (App algo1 arg1) (App algo2 arg2) = (algo1 `stupidEq` algo2) && (arg1 `stupidEq` arg2)
+
+instance Eq Term where
+  Var v1 == Var v2 = v1 == v2
+  App algo1 arg1 == App algo2 arg2 = algo1 == algo2 && arg1 == arg2
+  Lam v1 b1 == Lam v2 b2 = sub1 == sub2
+    where
+      freshVar = Var $ fresh $ free b1 `union` free b2
+      sub1 = substitute b1 v1 freshVar
+      sub2 = substitute b2 v2 freshVar
+  _ == _ = False
 
 
 -- | reduce term
@@ -88,35 +94,3 @@ reduce term = let term' = beta term
               in if term' == term
                  then eta term
                  else reduce term'
-
-
-
-
-
-
-instance Eq Term where
--- (==) :: Term -> Term -> Bool
-  (==) (Lam v1 b1) (Lam v2 b2) = (substitute b1 v1 freshVariable) == (substitute b2 v2 freshVariable) where
-                                  freshVariable = Var $ fresh (free b1 `union` free b2)
-  (==) (Var v1) (Var v2) = v1 == v2
-  (==) (App algo1 arg1) (App algo2 arg2) = (algo1 == algo2) && (arg1 == arg2)
-  (==) _ _ = False
-
-
-
-
-
-
--- Be careful with it. No shit like (\x.x x) (\x.x x)
-equals :: Term -> Term -> Bool
-equals t1 t2 = equals' (reduce t1) (reduce t2)
-
-equals' (Var v1) (Var v2) | v1 == v2 = True
-                          | otherwise = False
-equals' (App a1 b1) (App a2 b2) = a1 `equals` a2 && b1 `equals` b2
-equals' l1@(Lam var1 body1) l2@(Lam var2 body2) = (substitute body1 var1 newVar) `equals` (substitute body2 var2 newVar) where
-                                                    newVar = Var $ fresh ((free l1) `union` (free l2))
-equals' _ _ = False
-
-notEquals :: Term -> Term -> Bool
-notEquals t1 t2 = not $ equals t1 t2
