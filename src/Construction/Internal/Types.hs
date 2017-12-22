@@ -23,17 +23,17 @@ data Type = TVar { tvar :: Name }                   -- Type variables: a, b, ...
   deriving (Eq, Ord, Show)
 
 newtype Context = Context { getCtx :: Map Name Type } -- Types of variables
-  deriving (Show)
+  deriving (Show, Eq)
 
 newtype Substitution = Substitution { getSubs :: Map Name Type } -- Substitute type variable by some type
-  deriving (Show)
+  deriving (Show, Eq)
 
 type Equation = (Type, Type) -- Equation on types
 
 instance Monoid Context where
-  mempty = undefined
-  Context a `mappend` Context b = undefined
+  mempty = Context mempty
+  Context a `mappend` Context b = Context $ a `mappend` b
 
 instance Monoid Substitution where
-  mempty = undefined
-  Substitution a `mappend` Substitution b = undefined
+  mempty = Substitution mempty
+  Substitution a `mappend` Substitution b = Substitution $ a `mappend` b

@@ -21,7 +21,9 @@ library
   other-modules:       Construction.Internal.Types
                      , Construction.Internal.Functions
                      , Construction.Internal.Parser
-                     
+                     , Construction.Internal.TypeFunctions
+                     , Construction.Internal.TypeParser
+
                      , Tasks.GADT_1.GADTExpr
                      , Tasks.GADT_1.GADTParser
   build-depends:       base >= 4.7 && < 5
@@ -77,6 +79,22 @@ test-suite task1-test
                      , text
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
+
+test-suite zstt-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  main-is:             STTSpec.hs
+  build-depends:       base
+                     , construct-yourself
+                     , QuickCheck
+                     , hspec
+                     , containers
+                     , parsec
+                     , text
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  default-language:    Haskell2010
+
+
 
 source-repository head
   type:     git

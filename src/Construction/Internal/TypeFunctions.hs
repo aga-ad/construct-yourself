@@ -3,7 +3,7 @@
 
 module Construction.Internal.TypeFunctions where
 
-import qualified Data.Map                        as M ((!))
+import qualified Data.Map                        as M ((!), map, member, union, fromList, keys)
 import           Data.Text                       (pack)
 import           Data.Map                        (member, fromList)
 import           Data.Set                        (Set (..), elemAt, delete, singleton, toList)
@@ -28,25 +28,29 @@ class Substitutable a where
 --   [a:=t]empty       => empty
 --   [a:=t]{x:t1 ... } => {x:([a:=t]t1) ... }
 instance Substitutable Context where
-  substitute = undefined
+  substitute sbst ctx = Context $ M.map (substitute sbst) (getCtx ctx)
 
 -- Substitution in type:
 --   [a:=t] a     => t
 --   [a:=t] b     => b
 --   [a:=t](r->p) => ([a:=t]r)->([a:=t]p)
 instance Substitutable Type where
-  substitute = undefined  
+  substitute sbst t@(TVar name) | M.member name (getSubs sbst) = (getSubs sbst) M.! name
+                                | otherwise = t
+  substitute sbst (TArr from to) = TArr (substitute sbst from) (substitute sbst to)
 
 -- Compose two substitutions
--- S@[a1 := t1, ...] . [b1 := s1 ...] = [b1 := S(s1) ... a1 := t1 ...]
+-- S@[a1 := t1, ...] . [b1 := s1 ...] = [b1 := S(s1) ... a1 := t1 ...] ???????????????????????????????????????????
+-- T◦S
 compose :: Substitution -> Substitution -> Substitution
-compose bc ab = undefined
+compose s t = let keytypes = M.keys $ M.union (getSubs s) (getSubs t)
+              in Substitution $ M.fromList $ map (\tp -> (tp, substitute t $ substitute s $ TVar tp)) keytypes
 
 -- Create new context from free variables of some term
 contextFromTerm :: Term -> Context
 contextFromTerm term = Context $ fromList $ zip (toList $ free term) vars
   where
-    vars = fmap (TVar . pack . ('a':) . show) [1..] 
+    vars = fmap (TVar . pack . ('a':) . show) [1..]
 
 -- Find a substitution that can solve the set of equations
 u :: Set Equation -> Maybe Substitution
