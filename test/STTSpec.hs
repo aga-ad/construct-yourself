@@ -3,7 +3,7 @@
 module Main where
 
 import           Construction     (Context (..), Equation, Name,
-                                   Substitution (..), Term (..), Type (..), typeP)
+                                   Substitution (..), Term (..), Type (..), typeP, substitutionP)
 import           Data.Text        hiding (singleton)
 import           Tasks
 import           Test.Hspec
@@ -16,6 +16,7 @@ main = hspec $ do
     describe "Context monoid test" contextTest
     describe "Substitution monoid test" substitutionTest
     describe "Type parser test" typeParserTest
+    describe "Substitution parser test" substitutionParserTest
 
 
 emptyContext = mempty
@@ -44,16 +45,24 @@ substitutionTest = do
   it "#3" $ aSubstitution `mappend` bSubstitution `mappend` emptySubstitution `mappend` aSubstitution `mappend` bSubstitution `shouldBe` abSubstitution
 
 
-checkTP :: Text -> Type -> Expectation
-checkTP inputStr result = TP.parse typeP "parser" inputStr `shouldBe` Right result
-itTP input answer = it input $ checkTP (pack input) answer
+
+
+checkTP :: (Eq a, Show a) => Parser a -> Text -> a -> Expectation
+checkTP parser inputStr result = TP.parse parser "parser" inputStr `shouldBe` Right result
+itTP input answer = it input $ checkTP typeP (pack input) answer
 
 typeParserTest :: SpecWith ()
 typeParserTest = do
   itTP "t" $ TVar "t"
-  itTP "  t000  " $ TVar "t000"
+  itTP "  9t0A0Z0  " $ TVar "9t0A0Z0"
   itTP "(((tt)))" $ TVar "tt"
   itTP "a->b->c" $ TArr (TVar "a") (TArr (TVar "b") (TVar "c"))
   itTP "((((a)->((((b)))->((c))))))" $ TArr (TVar "a") (TArr (TVar "b") (TVar "c"))
   itTP " ( ( ( ( ( a ) -> ( ( ( b ) ) ) ) -> ( ( c ) ) ) ) ) " $ TArr (TArr (TVar "a") (TVar "b")) (TVar "c")
   itTP "(a->b)->(a->c)->(a->d)" $ TArr (TArr (TVar "a") (TVar "b")) (TArr (TArr (TVar "a") (TVar "c")) (TArr (TVar "a") (TVar "d")))
+
+itSP input answer = it input $ checkTP substitutionP (pack input) answer
+
+substitutionParserTest :: SpecWith ()
+substitutionParserTest = do
+  itSP "z=y,a=b, c = d , e = a->b->c" $ Substitution $ fromList [("z", TVar "y"), ("a", TVar "b"), ("c", TVar "d"), ("e", TArr (TVar "a") (TArr (TVar "b") (TVar "c")))]
