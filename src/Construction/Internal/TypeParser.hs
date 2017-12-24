@@ -1,6 +1,7 @@
-module Construction.Internal.TypeParser (typeP, substitutionP) where
+module Construction.Internal.TypeParser (typeP, substitutionP, contextP) where
 
 import           Construction.Internal.Types (Type (..), Name, Substitution (..), Context (..))
+import           Construction.Internal.Parser (termP)
 import           Data.Text                   (pack)
 import           Data.Map                    (fromList)
 import           Text.Parsec.Char            (char, digit, space, alphaNum, string)
@@ -31,3 +32,9 @@ substitutionP = (\l -> Substitution $ fromList l) <$> sepBy substitution1P (char
 
 substitution1P :: Parser (Name, Type)
 substitution1P = (\n t -> (n, t)) <$> (nameP <* (char '=')) <*> typeP
+
+contextP :: Parser Context
+contextP = (\l -> Context $ fromList l) <$> sepBy context1P (char ',')
+
+context1P :: Parser (Name, Type)
+context1P = (\n t -> (n, t)) <$> (nameP <* (char ':')) <*> typeP

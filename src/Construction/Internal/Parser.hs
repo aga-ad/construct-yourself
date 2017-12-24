@@ -2,7 +2,7 @@ module Construction.Internal.Parser where
 
 import           Construction.Internal.Types (Term (..), Name)
 import           Data.Text                   (pack)
-import           Text.Parsec.Char            (char, digit, space)
+import           Text.Parsec.Char            (char, digit, space, alphaNum)
 import           Text.Parsec.Combinator      (between, many1)
 import           Text.Parsec.Prim            (many, try, (<|>))
 import           Text.Parsec.Text            (Parser)
@@ -27,5 +27,6 @@ lamP :: Parser Term
 lamP = try $ between (char '(') (char ')') $
        Lam <$> ((char '\\') *> nameP) <* (char '.') <*> termP
 
+
 nameP :: Parser Name
-nameP = (\x y -> pack (x:y)) <$> char 'x' <*> many digit
+nameP = pack <$> many1 alphaNum

@@ -62,7 +62,7 @@ u set | null set  = pure mempty
 -- NB: you can use @fresh@ function to generate type names
 e :: Context -> Term -> Type -> Maybe (Set Equation)
 e ctx term tpe = case term of
-                   Var{..} -> (\x -> singleton (tpe,x)) <$> ctx ! var
+                   Var{..} -> undefined--(\x -> singleton (tpe,x)) <$> ctx ! var
                    App{..} -> undefined
                    Lam{..} -> undefined
 
