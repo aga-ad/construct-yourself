@@ -43,6 +43,7 @@ instance Monoid Substitution where
 instance Show Term where
   show (Var n) = unpack n
   show (App a@Var{..} b@(Var _)) = show a ++ " " ++ show b
+  show (App a@(App a1 l@Lam{..}) b@Var{..}) = show a1 ++ " (" ++ show l ++ ") " ++ show b
   show (App a@App{..} b@Var{..}) = show a ++ " " ++ show b
   show (App a@Lam{..} b@Var{..}) = "(" ++ show a ++ ") " ++ show b
   show (App a@Var{..} b@App{..}) = show a ++ " (" ++ show b ++ ")"

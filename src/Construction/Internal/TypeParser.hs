@@ -21,11 +21,13 @@ varP :: Parser Type
 varP = TVar <$> nameP
 
 nameP :: Parser Name
-nameP = pack <$> (many space *> many1 alphaNum) <* many space
+nameP = pack <$> spacedP (many1 alphaNum)
 
 bracketP :: Parser Type
-bracketP = many space *> (between (char '(') (char ')') typeP) <* many space
+bracketP = spacedP (between (char '(') (char ')') typeP)
 
+spacedP :: Parser a -> Parser a
+spacedP p = (many space *> p) <* many space
 
 substitutionP :: Parser Substitution
 substitutionP = (\l -> Substitution $ fromList l) <$> sepBy substitution1P (char ',')

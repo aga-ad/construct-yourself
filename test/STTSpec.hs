@@ -3,7 +3,7 @@
 module Main where
 
 import           Construction     (Context (..), Equation, Name, Substitution (..), Term (..), Type (..),
-                                  typeP, substitutionP, contextP)
+                                  termP, typeP, substitutionP, contextP)
 import           Data.Text        hiding (singleton)
 import           Tasks
 import           Test.Hspec
@@ -23,6 +23,7 @@ main = do
     describe "Context parser test" contextParserTest
     describe "Substitution parse->show test" substitutionPSTest
     describe "Context parser->show test" contextPSTest
+    describe "Term parser->show test" termPSTest
 
 
 emptyContext = mempty
@@ -80,9 +81,9 @@ contextParserTest = do
   itCP "a:z->b, b : q -> z  " $ Context $ fromList [("a", TArr (TVar "z") (TVar "b")), ("b", TArr (TVar "q") (TVar "z"))]
 
 
+itPSmaker parser input =  it input $ (show (TP.parse parser "parser" (pack input))) `shouldBe` "Right " ++ input
 
-itSPS input = it input $ (show (TP.parse substitutionP "parser" (pack input))) `shouldBe` "Right " ++ input
-
+itSPS = itPSmaker substitutionP
 substitutionPSTest :: SpecWith ()
 substitutionPSTest = do
   itSPS "x = y"
@@ -90,10 +91,25 @@ substitutionPSTest = do
   itSPS "a = (x -> x) -> x -> x, x = y -> y, y = z"
 
 
-itCPS input = it input $ (show (TP.parse contextP "parser" (pack input))) `shouldBe` "Right " ++ input
-
+itCPS = itPSmaker contextP
 contextPSTest :: SpecWith ()
 contextPSTest = do
   itCPS "x : y"
   itCPS "x : y, y : z"
   itCPS "x : a, y : (b -> b) -> b"
+
+itTPS = itPSmaker termP
+termPSTest :: SpecWith ()
+termPSTest = do
+  itTPS "l0l"
+  itTPS "A P P l ic a ti0 n"
+  itTPS "A (Valid (Application too))"
+  itTPS "l 0 l"
+  itTPS "\\x.x"
+  itTPS "\\x.\\y.x y x y"
+  itTPS "\\x.\\y.x (y x) y"
+  itTPS "\\x.\\y.x (y (x y))"
+  itTPS "y ((\\x.x) \\a.\\b.a (\\z.z) b)"
+  itTPS "x (y ((\\x.x) \\a.\\b.a (\\z.z) b))"
+  itTPS "\\x.\\y.x (y ((\\x.x) \\a.\\b.a (\\z.z) b))"
+  -- add more tests!!
