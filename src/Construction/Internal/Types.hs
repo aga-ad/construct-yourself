@@ -41,16 +41,23 @@ instance Monoid Substitution where
   Substitution a `mappend` Substitution b = Substitution $ a `mappend` b
 
 instance Show Term where
+  --show = bshow False
+
+  --bshow :: Term -> (String
+
+
   show (Var n) = unpack n
   show (App a@Var{..} b@(Var _)) = show a ++ " " ++ show b
-  show (App a@(App a1 l@Lam{..}) b@Var{..}) = show a1 ++ " (" ++ show l ++ ") " ++ show b
+  show (App a@(App _ Lam{..}) b@Var{..}) = "(" ++ show a ++ ") " ++ show b
   show (App a@App{..} b@Var{..}) = show a ++ " " ++ show b
   show (App a@Lam{..} b@Var{..}) = "(" ++ show a ++ ") " ++ show b
   show (App a@Var{..} b@App{..}) = show a ++ " (" ++ show b ++ ")"
-  show (App a@App{..} b@(App _ _)) = "(" ++ show a ++ ") (" ++ show b ++ ")"
+  show (App a@(App _ Lam{..}) b@(App _ _)) = "(" ++ show a ++ ") (" ++ show b ++ ")"
+  show (App a@App{..} b@(App _ _)) = show a ++ " (" ++ show b ++ ")"
   show (App a@Lam{..} b@App{..}) = "(" ++ show a ++ ") (" ++ show b ++ ")"
   show (App a@Var{..} b@Lam{..}) = show a ++ " " ++ show b
-  show (App a@App{..} b@Lam{..}) = "(" ++ show a ++ ") " ++ show b
+  show (App a@(App _ Lam{..}) b@(Lam _ _)) = "(" ++ show a ++ ") " ++ show b
+  show (App a@App{..} b@Lam{..}) = show a ++ " " ++ show b 
   show (App a@Lam{..} b@(Lam _ _)) = "(" ++ show a ++ ") " ++ show b
   show (Lam n t) = "\\" ++ unpack n ++ "." ++ show t
 
