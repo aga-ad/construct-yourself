@@ -133,6 +133,11 @@ itu1 s1 s2 sres = let (Right (a, b, subs)) = do
                                                 sub <- parsePls sres substitutionP
                                                 return (t1, t2, sub)
                   in it (s1 ++ " " ++ s2 ++ "  =>  " ++ sres) (u1 a b `shouldBe` Just subs)
+itu1' s1 s2 = let (Right (a, b)) = do
+                                      t1 <- parsePls s1 typeP
+                                      t2 <- parsePls s2 typeP
+                                      return (t1, t2)
+              in it (s1 ++ " " ++ s2 ++ "  !!!") (u1 a b `shouldBe` Nothing)
 
 u1Test :: SpecWith ()
 u1Test = do
@@ -140,4 +145,6 @@ u1Test = do
   itu1 "a->b" "b->a" "b=a"
   itu1 "a->b->c" "c->b->a" "c=a"
   itu1 "b->a->b" "(g->g)->d" "b=g->g, d=a->g->g"
+  itu1' "c" "a->b->c"
+  itu1' "a->b->a" "a->a"
   -- need more tests

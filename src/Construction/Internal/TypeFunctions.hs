@@ -71,7 +71,7 @@ u1 (TArr a1 a2) (TArr b1 b2) = do
 
 contained :: Name -> Type -> Bool
 n `contained` (TVar a) = n == a
-n `contained` (TArr a b) = n `contained` a && n `contained` b
+n `contained` (TArr a b) = n `contained` a || n `contained` b
 
 
 -- Generate equations set from some term
