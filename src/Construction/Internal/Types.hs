@@ -57,7 +57,7 @@ instance Show Term where
   show (App a@Lam{..} b@App{..}) = "(" ++ show a ++ ") (" ++ show b ++ ")"
   show (App a@Var{..} b@Lam{..}) = show a ++ " " ++ show b
   show (App a@(App _ Lam{..}) b@(Lam _ _)) = "(" ++ show a ++ ") " ++ show b
-  show (App a@App{..} b@Lam{..}) = show a ++ " " ++ show b 
+  show (App a@App{..} b@Lam{..}) = show a ++ " " ++ show b
   show (App a@Lam{..} b@(Lam _ _)) = "(" ++ show a ++ ") " ++ show b
   show (Lam n t) = "\\" ++ unpack n ++ "." ++ show t
 
@@ -77,6 +77,7 @@ instance Show Substitution where
   show (Substitution m) = pl $ toAscList m where
     pl :: [(Name, Type)] -> String
     one n t = unpack n ++ " = " ++ show t
+    pl [] = ""
     pl [(n, t)] = one n t
     pl ((n, t):xs) = one n t ++ ", " ++ pl xs
 

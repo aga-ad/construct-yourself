@@ -20,7 +20,7 @@ appP :: Parser Term
 --       App <$> (termP <* many1 space)
 --           <*> termP
 
--- An application term must not be in brackets. Chainl1 function helps me to eliminate left recursion.
+-- An application term must not be in brackets. Chainl1 function helps to eliminate left recursion.
 appP = chainl1 (try lamP <|> try varP <|> bracketP) (many1 space >> return (\a b -> App a b))
 
 

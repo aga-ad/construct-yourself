@@ -3,7 +3,7 @@
 module Main where
 
 import           Construction     (Context (..), Equation, Name, Substitution (..), Term (..), Type (..),
-                                  termP, typeP, substitutionP, contextP)
+                                  termP, typeP, substitutionP, contextP, compose, u1, u)
 import           Data.Text        hiding (singleton)
 import           Tasks
 import           Test.Hspec
@@ -13,8 +13,9 @@ import           Data.Map
 
 main :: IO ()
 main = do
-  print $ Substitution $ fromList [("z", TVar "y"), ("a", TVar "b"), ("c", TVar "d"), ("e", TArr (TVar "a") (TArr (TVar "b") (TVar "c")))]
-  print $ (Lam "x0" (Lam "x" (App (Var "x") (Var "x1"))))
+  --print $ Substitution $ fromList [("z", TVar "y"), ("a", TVar "b"), ("c", TVar "d"), ("e", TArr (TVar "a") (TArr (TVar "b") (TVar "c")))]
+  --print $ (Lam "x0" (Lam "x" (App (Var "x") (Var "x1"))))
+  -- print $ u1 (parseType "b->a->b") (parseType "(g->g)->d")
   hspec $ do
     describe "Context monoid test" contextTest
     describe "Substitution monoid test" substitutionTest
@@ -24,6 +25,7 @@ main = do
     describe "Substitution parse->show test" substitutionPSTest
     describe "Context parser->show test" contextPSTest
     describe "Term parser->show test" termPSTest
+    describe "Simple unification test" u1Test
 
 
 emptyContext = mempty
@@ -54,9 +56,10 @@ substitutionTest = do
 
 
 
-checkP :: (Eq a, Show a) => Parser a -> Text -> a -> Expectation
-checkP parser inputStr result = TP.parse parser "parser" inputStr `shouldBe` Right result
-itTP input answer = it input $ checkP typeP (pack input) answer
+parsePls str parser = TP.parse parser "parser" (pack str)
+checkP parser inputStr result = parsePls inputStr parser `shouldBe` Right result
+
+itTP input answer = it input $ checkP typeP input answer
 
 typeParserTest :: SpecWith ()
 typeParserTest = do
@@ -68,20 +71,20 @@ typeParserTest = do
   itTP " ( ( ( ( ( a ) -> ( ( ( b ) ) ) ) -> ( ( c ) ) ) ) ) " $ TArr (TArr (TVar "a") (TVar "b")) (TVar "c")
   itTP "(a->b)->(a->c)->(a->d)" $ TArr (TArr (TVar "a") (TVar "b")) (TArr (TArr (TVar "a") (TVar "c")) (TArr (TVar "a") (TVar "d")))
 
-itSP input answer = it input $ checkP substitutionP (pack input) answer
+itSP input answer = it input $ checkP substitutionP input answer
 
 substitutionParserTest :: SpecWith ()
 substitutionParserTest = do
   itSP "z=y,a=b, c = d , e = a->b->c" $ Substitution $ fromList [("z", TVar "y"), ("a", TVar "b"), ("c", TVar "d"), ("e", TArr (TVar "a") (TArr (TVar "b") (TVar "c")))]
 
-itCP input answer = it input $ checkP contextP (pack input) answer
+itCP input answer = it input $ checkP contextP input answer
 
 contextParserTest :: SpecWith ()
 contextParserTest = do
   itCP "a:z->b, b : q -> z  " $ Context $ fromList [("a", TArr (TVar "z") (TVar "b")), ("b", TArr (TVar "q") (TVar "z"))]
 
 
-itPSmaker parser input =  it input $ (show (TP.parse parser "parser" (pack input))) `shouldBe` "Right " ++ input
+itPSmaker parser input =  it input $ (show (parsePls input parser)) `shouldBe` "Right " ++ input
 
 itSPS = itPSmaker substitutionP
 substitutionPSTest :: SpecWith ()
@@ -121,4 +124,20 @@ termPSTest = do
   itTPS "\\x.x a b \\c.d"
   itTPS "x a b \\c.d"
   itTPS "a b (c d)"
-  -- add more tests!!
+
+----------------------------------------------------------------------- compose test????
+
+itu1 s1 s2 sres = let (Right (a, b, subs)) = do
+                                                t1 <- parsePls s1 typeP
+                                                t2 <- parsePls s2 typeP
+                                                sub <- parsePls sres substitutionP
+                                                return (t1, t2, sub)
+                  in it (s1 ++ " " ++ s2 ++ "  =>  " ++ sres) (u1 a b `shouldBe` Just subs)
+
+u1Test :: SpecWith ()
+u1Test = do
+  itu1 "a->b->c" "a->b->c" ""
+  itu1 "a->b" "b->a" "b=a"
+  itu1 "a->b->c" "c->b->a" "c=a"
+  itu1 "b->a->b" "(g->g)->d" "b=g->g, d=a->g->g"
+  -- need more tests

@@ -3,7 +3,7 @@
 
 module Construction.Internal.TypeFunctions where
 
-import qualified Data.Map                        as M ((!), map, member, union, fromList, keys)
+import qualified Data.Map                        as M ((!), map, member, union, fromList, keys, singleton)
 import           Data.Text                       (pack)
 import           Data.Map                        (member, fromList)
 import           Data.Set                        (Set (..), elemAt, delete, singleton, toList)
@@ -57,6 +57,22 @@ u :: Set Equation -> Maybe Substitution
 u set | null set  = pure mempty
       | otherwise = let (x, rest) = split set
                     in undefined
+
+u1 :: Type -> Type -> Maybe Substitution
+u1 a@(TVar n) b | a == b = Just mempty
+                | n `contained` b = Nothing
+                | otherwise = Just $ Substitution $ M.singleton n b
+u1 a b@(TVar _) = u1 b a
+u1 (TArr a1 a2) (TArr b1 b2) = do
+                                s <- u1 a2 b2
+                                res <- u1 (substitute s a1) (substitute s b1)
+                                return (compose s res)
+
+
+contained :: Name -> Type -> Bool
+n `contained` (TVar a) = n == a
+n `contained` (TArr a b) = n `contained` a && n `contained` b
+
 
 -- Generate equations set from some term
 -- NB: you can use @fresh@ function to generate type names
