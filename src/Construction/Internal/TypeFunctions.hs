@@ -55,8 +55,11 @@ contextFromTerm term = Context $ fromList $ zip (toList $ free term) vars
 -- Find a substitution that can solve the set of equations
 u :: Set Equation -> Maybe Substitution
 u set | null set  = pure mempty
-      | otherwise = let (x, rest) = split set
-                    in undefined
+      | otherwise = let ((a, b), rest) = split set
+                    in do
+                      s1 <- u1 a b
+                      s2 <- u rest
+                      return (compose s2 s1)
 
 u1 :: Type -> Type -> Maybe Substitution
 u1 a@(TVar n) b | a == b = Just mempty

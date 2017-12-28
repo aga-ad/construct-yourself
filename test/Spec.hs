@@ -13,7 +13,7 @@ main = hspec $ do
     describe "Free test" testFree
     describe "Bound test" testBound
     describe "Alpha test" testAlpha
-    describe "Substitution test" testSubs
+    --describe "Substitution test" testSubs
     describe "Beta test" testBeta
     describe "Eta test" testEta
     describe "Reduce test" testReduce
@@ -37,7 +37,7 @@ appXX1 = App varX varX1 -- (x x1)
 testFresh :: SpecWith ()
 testFresh = do
     let conflicts = fromList ["a", "x", "x1"]
-    it "should test fresh function" $ 
+    it "should test fresh function" $
         toList conflicts `shouldNotContain` [fresh conflicts]
 
 testFree :: SpecWith ()
@@ -77,17 +77,17 @@ testAlpha = do
     it "#6" $ alpha term (fromList ["x"]) `shouldBe` (Lam "x2" (Lam "x0" (App (Var "x0") (Var "x1"))))
     it "#7" $ alpha term (fromList ["x", "x2"]) `shouldBe` (Lam "x0" (Lam "x0" (App (Var "x0") (Var "x1"))))
 
-testSubs :: SpecWith ()
-testSubs = do
-    it "#1" $ substitute varX "x" varX `shouldBe` varX
-    it "#2" $ substitute varX "x1" varX2 `shouldBe` varX
-    it "#3" $ substitute varX "x" varX2 `shouldBe` varX2
-    it "#4" $ substitute appXX1 "x" varX2 `shouldBe` App varX2 varX1
-    it "#5" $ substitute appXX1 "x1" varX2 `shouldBe` App varX varX2
-    it "#6" $ substitute lamId "x" varX2 `shouldBe` lamId
-    it "#7" $ substitute lamK "x1" varX2 `shouldBe` lamK
-    it "#8" $ substitute (Lam "x" (App varX varX2)) "x2" varX1 `shouldBe` Lam "x" (App varX varX1)
-    it "#9" $ substitute (Lam "x" (App varX varX2)) "x2" appXX1 `shouldBe` Lam "x0" (App varX0 appXX1)
+-- testSubs :: SpecWith ()
+-- testSubs = do
+--     it "#1" $ substitute varX "x" varX `shouldBe` varX
+--     it "#2" $ substitute varX "x1" varX2 `shouldBe` varX
+--     it "#3" $ substitute varX "x" varX2 `shouldBe` varX2
+--     it "#4" $ substitute appXX1 "x" varX2 `shouldBe` App varX2 varX1
+--     it "#5" $ substitute appXX1 "x1" varX2 `shouldBe` App varX varX2
+--     it "#6" $ substitute lamId "x" varX2 `shouldBe` lamId
+--     it "#7" $ substitute lamK "x1" varX2 `shouldBe` lamK
+--     it "#8" $ substitute (Lam "x" (App varX varX2)) "x2" varX1 `shouldBe` Lam "x" (App varX varX1)
+--     it "#9" $ substitute (Lam "x" (App varX varX2)) "x2" appXX1 `shouldBe` Lam "x0" (App varX0 appXX1)
 
 testBeta :: SpecWith ()
 testBeta = do
@@ -118,7 +118,7 @@ testReduce = do
     it "#4" $ reduce (App lamK varX) `shouldBe` Lam "x1" varX
     it "#5" $ reduce (App (App lamK varX) varX2) `shouldBe` varX
     it "#6" $ reduce (Lam "x0" (App (App (App lamK varX) varX2) varX0)) `shouldBe` varX
-      
+
 testEqual :: SpecWith ()
 testEqual = do
     it "#1" $ Lam "x" (Var "x") `shouldBe` Lam "y" (Var "y")

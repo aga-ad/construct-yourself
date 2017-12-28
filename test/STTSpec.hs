@@ -3,13 +3,14 @@
 module Main where
 
 import           Construction     (Context (..), Equation, Name, Substitution (..), Term (..), Type (..),
-                                  termP, typeP, substitutionP, contextP, compose, u1, u)
+                                  termP, typeP, substitutionP, contextP, compose, u1, u, substitute)
 import           Data.Text        hiding (singleton)
 import           Tasks
 import           Test.Hspec
 import qualified Text.Parsec      as TP (parse)
 import           Text.Parsec.Text
 import           Data.Map
+import qualified Data.Set         as S (fromList)
 
 main :: IO ()
 main = do
@@ -26,6 +27,7 @@ main = do
     describe "Context parser->show test" contextPSTest
     describe "Term parser->show test" termPSTest
     describe "Simple unification test" u1Test
+    describe "Unification test" uTest
 
 
 emptyContext = mempty
@@ -132,7 +134,9 @@ itu1 s1 s2 sres = let (Right (a, b, subs)) = do
                                                 t2 <- parsePls s2 typeP
                                                 sub <- parsePls sres substitutionP
                                                 return (t1, t2, sub)
-                  in it (s1 ++ " " ++ s2 ++ "  =>  " ++ sres) (u1 a b `shouldBe` Just subs)
+                  in it (s1 ++ " " ++ s2 ++ "  =>  " ++ sres) $ do
+                                                                  u1 a b `shouldBe` Just subs
+                                                                  substitute subs a `shouldBe` substitute subs b
 itu1' s1 s2 = let (Right (a, b)) = do
                                       t1 <- parsePls s1 typeP
                                       t2 <- parsePls s2 typeP
@@ -148,3 +152,22 @@ u1Test = do
   itu1' "c" "a->b->c"
   itu1' "a->b->a" "a->a"
   -- need more tests
+
+parseEq (s1, s2) = do
+                      t1 <- parsePls s1 typeP
+                      t2 <- parsePls s2 typeP
+                      return (t1, t2)
+
+itu sl sres = let (Right (el, res)) = do
+                                        lst <- mapM parseEq sl
+                                        sub <- parsePls sres substitutionP
+                                        return (lst, sub)
+              in it (show sl ++ "  =>  " ++ sres) $ do
+                                                      u (S.fromList el) `shouldBe` Just res
+                                                      Prelude.map (\(a, b) -> substitute res a) el `shouldBe` Prelude.map (\(a, b) -> substitute res b) el
+
+uTest :: SpecWith ()
+uTest = do
+  itu [("a", "b"), ("c", "d")] "a=b, c=d"
+  itu [("a", "a"), ("c", "c"), ("d", "d")] ""
+  itu [("b->a->b", "(g->g)->d"), ("g", "a->a")] "b=(a->a)->a->a, d=a->(a->a)->a->a, g=a->a"
