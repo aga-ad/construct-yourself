@@ -1,9 +1,10 @@
-module Construction.Internal.TypeParser (typeP, substitutionP, contextP) where
+module Construction.Internal.TypeParser (typeP, substitutionP, contextP, setEquationP) where
 
-import           Construction.Internal.Types (Type (..), Name, Substitution (..), Context (..))
+import           Construction.Internal.Types (Type (..), Name, Substitution (..), Context (..), Equation)
 import           Construction.Internal.Parser (termP)
 import           Data.Text                   (pack)
 import           Data.Map                    (fromList)
+import qualified Data.Set               as S (fromList, Set (..))
 import           Text.Parsec.Char            (char, digit, space, alphaNum, string)
 import           Text.Parsec.Combinator      (between, many1, sepBy)
 import           Text.Parsec.Prim            (many, try, (<|>))
@@ -40,3 +41,9 @@ contextP = (\l -> Context $ fromList l) <$> sepBy context1P (char ',')
 
 context1P :: Parser (Name, Type)
 context1P = (\n t -> (n, t)) <$> (nameP <* (char ':')) <*> typeP
+
+equationP :: Parser Equation
+equationP = (\t1 t2 -> (t1, t2)) <$> (typeP <* (string "==")) <*> typeP
+
+setEquationP :: Parser (S.Set Equation)
+setEquationP = (\l -> S.fromList l) <$> sepBy equationP (char ',')

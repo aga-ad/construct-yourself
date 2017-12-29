@@ -31,8 +31,6 @@ newtype Substitution = Substitution { getSubs :: Map Name Type } -- Substitute t
   deriving (Eq)
 
 type Equation = (Type, Type)
---data Equation = Equatation {l :: Type, r :: Type}
-  --deriving (Eq, Ord)
 
 instance Monoid Context where
   mempty = Context mempty
@@ -43,11 +41,6 @@ instance Monoid Substitution where
   Substitution a `mappend` Substitution b = Substitution $ a `mappend` b
 
 instance Show Term where
-  --show = bshow False
-
-  --bshow :: Term -> (String
-
-
   show (Var n) = unpack n
   show (App a@Var{..} b@(Var _)) = show a ++ " " ++ show b
   show (App a@(App _ Lam{..}) b@Var{..}) = "(" ++ show a ++ ") " ++ show b
@@ -70,8 +63,9 @@ instance Show Type where
 
 instance Show Context where
   show (Context m) = pl $ toAscList m where
-    pl :: [(Name, Type)] -> String
     one n t = unpack n ++ " : " ++ show t
+    pl :: [(Name, Type)] -> String
+    pl [] = ""
     pl [(n, t)] = one n t
     pl ((n, t):xs) = one n t ++ ", " ++ pl xs
 
@@ -88,6 +82,3 @@ instance {-# OVERLAPS #-} Show Equation where
 
 instance {-# OVERLAPS #-} Show (Context, Type, Term) where
   show (c, t, term) = show c ++ " |- " ++ show term ++ " : " ++ show t
-
---instance Show Equation where
---  show (Equatation t1 t2) = show t1 ++ " = " ++ show t2

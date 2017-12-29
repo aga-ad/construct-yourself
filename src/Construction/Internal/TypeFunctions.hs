@@ -25,15 +25,15 @@ class Substitutable a where
   substitute :: Substitution -> a -> a
 
 -- Substitution in context
---   [a:=t]empty       => empty
---   [a:=t]{x:t1 ... } => {x:([a:=t]t1) ... }
+--   [a1:=t1, ...]empty       => empty
+--   [a1:=t1, ...]{x:t1 ... } => {x:([a1:=t1, ...]t1) ... }
 instance Substitutable Context where
   substitute sbst ctx = Context $ M.map (substitute sbst) (getCtx ctx)
 
 -- Substitution in type:
---   [a:=t] a     => t
---   [a:=t] b     => b
---   [a:=t](r->p) => ([a:=t]r)->([a:=t]p)
+--   [a1:=t1, ...]an     => tn
+--   [a1:=t1, ...]b      => b
+--   [a1:=t1, ...](r->p) => ([a1:=t1, ...]r)->([a1:=t1, ...]p)
 instance Substitutable Type where
   substitute sbst t@(TVar name) | M.member name (getSubs sbst) = (getSubs sbst) M.! name
                                 | otherwise = t
@@ -41,8 +41,10 @@ instance Substitutable Type where
 
 
 -- Compose two substitutions
--- S@[a1 := t1, ...] . [b1 := s1 ...] = [b1 := S(s1) ... a1 := t1 ...] ???????????????????????????????????????????
--- T◦S
+--   S = [a1 := t1, ...]
+--   T = [b1 := p1, ...]
+--   T◦S = [a1 := T(S(a1)), ..., b1 := T(S(b1)) ...]
+--   compose S T = T◦S
 compose :: Substitution -> Substitution -> Substitution
 compose s t = let keytypes = M.keys $ M.union (getSubs s) (getSubs t)
               in Substitution $ M.fromList $ Prelude.map (\tp -> (tp, substitute t $ substitute s $ TVar tp)) keytypes
@@ -59,6 +61,8 @@ u set | null set  = pure mempty
       | otherwise = let (e, xs) = split set
                     in case e of
                       (a@(TVar n), b) -> uhelper a b where
+                                           n `contained` (TVar a) = n == a
+                                           n `contained` (TArr a b) = n `contained` a || n `contained` b
                                            uhelper a@(TVar n) b | a == b = u xs
                                                                 | n `contained` b = Nothing
                                                                 | otherwise = do let sub = Substitution $ M.singleton n b
@@ -68,13 +72,10 @@ u set | null set  = pure mempty
                       ((TArr a1 a2), (TArr b1 b2)) -> u $ (a1, b1) `insert` ((a2, b2) `insert` xs)
 
 
-contained :: Name -> Type -> Bool
-n `contained` (TVar a) = n == a
-n `contained` (TArr a b) = n `contained` a || n `contained` b
+
 
 
 -- Generate equations set from some term
--- NB: you can use @fresh@ function to generate type names
 e :: Context -> Term -> Type -> Maybe (Set Equation)
 e ctx term tpe = e' ctx term tpe ((typeNames tpe) `union` (typeNamesL $ M.elems (getCtx ctx)))
 e' ctx term tpe booked = case term of
@@ -92,6 +93,7 @@ e' ctx term tpe booked = case term of
                                       e1 <- e' (ctx `mappend` (Context $ M.singleton var new1)) body new2 booked2
                                       return ((tpe, TArr new1 new2) `insert` e1)
 
+-- Find all type names in type / list of types / set of equation 
 typeNames :: Type -> Set Name
 typeNames (TVar n) = singleton n
 typeNames (TArr a b) = typeNames a `union` typeNames b
