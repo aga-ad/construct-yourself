@@ -1,4 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Construction.Internal.Types
   ( Name, Term(..)
@@ -80,6 +82,12 @@ instance Show Substitution where
     pl [] = ""
     pl [(n, t)] = one n t
     pl ((n, t):xs) = one n t ++ ", " ++ pl xs
+
+instance {-# OVERLAPS #-} Show Equation where
+  show (t1, t2) = show t1 ++ " == " ++ show t2
+
+instance {-# OVERLAPS #-} Show (Context, Type, Term) where
+  show (c, t, term) = show c ++ " |- " ++ show term ++ " : " ++ show t
 
 --instance Show Equation where
 --  show (Equatation t1 t2) = show t1 ++ " = " ++ show t2

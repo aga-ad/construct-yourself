@@ -3,7 +3,7 @@
 module Main where
 
 import           Construction     (Context (..), Equation, Name, Substitution (..), Term (..), Type (..),
-                                  termP, typeP, substitutionP, contextP, compose, u1, u, substitute)
+                                  termP, typeP, substitutionP, contextP, compose, u1, u, substitute, e, pp)
 import           Data.Text        hiding (singleton)
 import           Tasks
 import           Test.Hspec
@@ -17,6 +17,27 @@ main = do
   --print $ Substitution $ fromList [("z", TVar "y"), ("a", TVar "b"), ("c", TVar "d"), ("e", TArr (TVar "a") (TArr (TVar "b") (TVar "c")))]
   --print $ (Lam "x0" (Lam "x" (App (Var "x") (Var "x1"))))
   -- print $ u1 (parseType "b->a->b") (parseType "(g->g)->d")
+  --print $ e (parsePls "x:t1, y:t2" contextP) (parsePls "\\a.a x y" termP) (parsePls "t" typeP)
+  print $ do cont <- parsePls "x:t1, y:t2" contextP
+             term <- parsePls "\\a.a x y" termP
+             tpe <- parsePls "t" typeP
+             return (e cont term tpe)
+  print $ do cont <- parsePls "" contextP
+             term <- parsePls "\\x.\\y.x y" termP
+             tpe <- parsePls "t" typeP
+             return (e cont term tpe)
+  print $ do cont <- parsePls "x:a1, y:a2" contextP
+             term <- parsePls "\\a.a x y" termP
+             tpe <- parsePls "t" typeP
+             return $ do ee <- e cont term tpe
+                         return (ee, u ee)
+
+  print $ pp (unRight (parsePls "\\a.a x y" termP))
+
+  -- print $ do s <- parsePls "x=a, y=b" substitutionP
+  --            t <- parsePls "a=t1, b=t2" substitutionP
+  --            return (compose s t)
+
   hspec $ do
     describe "Context monoid test" contextTest
     describe "Substitution monoid test" substitutionTest
@@ -29,7 +50,7 @@ main = do
     describe "Simple unification test" u1Test
     describe "Unification test" uTest
 
-
+unRight (Right a) = a
 emptyContext = mempty
 aContext = Context $ singleton "a" $ TVar "a"
 bContext = Context $ singleton "b" $ TVar "b"
@@ -129,16 +150,13 @@ termPSTest = do
 
 ----------------------------------------------------------------------- compose test????
 
-itu1 s1 s2 sres = let (Right (a, b, subs)) = do
-                                                t1 <- parsePls s1 typeP
+itu1 s1 s2 sres = let (Right (a, b, subs)) = do t1 <- parsePls s1 typeP
                                                 t2 <- parsePls s2 typeP
                                                 sub <- parsePls sres substitutionP
                                                 return (t1, t2, sub)
-                  in it (s1 ++ " " ++ s2 ++ "  =>  " ++ sres) $ do
-                                                                  u1 a b `shouldBe` Just subs
-                                                                  substitute subs a `shouldBe` substitute subs b
-itu1' s1 s2 = let (Right (a, b)) = do
-                                      t1 <- parsePls s1 typeP
+                  in it (s1 ++ " " ++ s2 ++ "  =>  " ++ sres) $ do u1 a b `shouldBe` Just subs
+                                                                   substitute subs a `shouldBe` substitute subs b
+itu1' s1 s2 = let (Right (a, b)) = do t1 <- parsePls s1 typeP
                                       t2 <- parsePls s2 typeP
                                       return (t1, t2)
               in it (s1 ++ " " ++ s2 ++ "  !!!") (u1 a b `shouldBe` Nothing)
@@ -146,25 +164,22 @@ itu1' s1 s2 = let (Right (a, b)) = do
 u1Test :: SpecWith ()
 u1Test = do
   itu1 "a->b->c" "a->b->c" ""
-  itu1 "a->b" "b->a" "b=a"
-  itu1 "a->b->c" "c->b->a" "c=a"
+  itu1 "a->b" "b->a" "a=b"
+  itu1 "a->b->c" "c->b->a" "a=c"
   itu1 "b->a->b" "(g->g)->d" "b=g->g, d=a->g->g"
   itu1' "c" "a->b->c"
   itu1' "a->b->a" "a->a"
   -- need more tests
 
-parseEq (s1, s2) = do
-                      t1 <- parsePls s1 typeP
+parseEq (s1, s2) = do t1 <- parsePls s1 typeP
                       t2 <- parsePls s2 typeP
                       return (t1, t2)
 
-itu sl sres = let (Right (el, res)) = do
-                                        lst <- mapM parseEq sl
-                                        sub <- parsePls sres substitutionP
-                                        return (lst, sub)
-              in it (show sl ++ "  =>  " ++ sres) $ do
-                                                      u (S.fromList el) `shouldBe` Just res
-                                                      Prelude.map (\(a, b) -> substitute res a) el `shouldBe` Prelude.map (\(a, b) -> substitute res b) el
+itu sl sres = let (Right (el, res)) = do lst <- mapM parseEq sl
+                                         sub <- parsePls sres substitutionP
+                                         return (lst, sub)
+              in it (show sl ++ "  =>  " ++ sres) $ do u (S.fromList el) `shouldBe` Just res
+                                                       Prelude.map (\(a, b) -> substitute res a) el `shouldBe` Prelude.map (\(a, b) -> substitute res b) el
 
 uTest :: SpecWith ()
 uTest = do
