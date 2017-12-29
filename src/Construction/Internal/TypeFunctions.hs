@@ -55,11 +55,6 @@ contextFromTerm term = Context $ fromList $ zip (toList $ free term) vars
 
 -- Find a substitution that can solve the set of equations
 u :: Set Equation -> Maybe Substitution
--- u set | null set  = pure mempty
---       | otherwise = do let ((a, b), rest) = split set
---                        s1 <- u1 a b
---                        s2 <- u rest
---                        return (compose s2 s1)
 u set | null set  = pure mempty
       | otherwise = let (e, xs) = split set
                     in case e of
@@ -71,16 +66,6 @@ u set | null set  = pure mempty
                                                                                  return (compose sub subs)
                       (b, a@(TVar n)) -> u $ (a, b) `insert` xs
                       ((TArr a1 a2), (TArr b1 b2)) -> u $ (a1, b1) `insert` ((a2, b2) `insert` xs)
-
-u1 :: Type -> Type -> Maybe Substitution
-u1 t1 t2 = u $ singleton (t1, t2)
--- u1 a@(TVar n) b | a == b = Just mempty
---                 | n `contained` b = Nothing
---                 | otherwise = Just $ Substitution $ M.singleton n b
--- u1 a b@(TVar _) = u1 b a
--- u1 (TArr a1 a2) (TArr b1 b2) = do s <- u1 a2 b2
---                                   res <- u1 (substitute s a1) (substitute s b1)
---                                   return (compose s res)
 
 
 contained :: Name -> Type -> Bool

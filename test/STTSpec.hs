@@ -3,7 +3,7 @@
 module Main where
 
 import           Construction     (Context (..), Equation, Name, Substitution (..), Term (..), Type (..),
-                                  termP, typeP, substitutionP, contextP, compose, u1, u, substitute, e, pp)
+                                  termP, typeP, substitutionP, contextP, compose, u, substitute, e, pp)
 import           Data.Text        hiding (singleton)
 import           Tasks
 import           Test.Hspec
@@ -47,7 +47,6 @@ main = do
     describe "Substitution parse->show test" substitutionPSTest
     describe "Context parser->show test" contextPSTest
     describe "Term parser->show test" termPSTest
-    describe "Simple unification test" u1Test
     describe "Unification test" uTest
 
 unRight (Right a) = a
@@ -150,26 +149,6 @@ termPSTest = do
 
 ----------------------------------------------------------------------- compose test????
 
-itu1 s1 s2 sres = let (Right (a, b, subs)) = do t1 <- parsePls s1 typeP
-                                                t2 <- parsePls s2 typeP
-                                                sub <- parsePls sres substitutionP
-                                                return (t1, t2, sub)
-                  in it (s1 ++ " " ++ s2 ++ "  =>  " ++ sres) $ do u1 a b `shouldBe` Just subs
-                                                                   substitute subs a `shouldBe` substitute subs b
-itu1' s1 s2 = let (Right (a, b)) = do t1 <- parsePls s1 typeP
-                                      t2 <- parsePls s2 typeP
-                                      return (t1, t2)
-              in it (s1 ++ " " ++ s2 ++ "  !!!") (u1 a b `shouldBe` Nothing)
-
-u1Test :: SpecWith ()
-u1Test = do
-  itu1 "a->b->c" "a->b->c" ""
-  itu1 "a->b" "b->a" "a=b"
-  itu1 "a->b->c" "c->b->a" "a=c"
-  itu1 "b->a->b" "(g->g)->d" "b=g->g, d=a->g->g"
-  itu1' "c" "a->b->c"
-  itu1' "a->b->a" "a->a"
-  -- need more tests
 
 parseEq (s1, s2) = do t1 <- parsePls s1 typeP
                       t2 <- parsePls s2 typeP
@@ -181,8 +160,18 @@ itu sl sres = let (Right (el, res)) = do lst <- mapM parseEq sl
               in it (show sl ++ "  =>  " ++ sres) $ do u (S.fromList el) `shouldBe` Just res
                                                        Prelude.map (\(a, b) -> substitute res a) el `shouldBe` Prelude.map (\(a, b) -> substitute res b) el
 
+
+itu' sl = let (Right el) = mapM parseEq sl
+          in it (show sl ++ "  !!!") $ u (S.fromList el) `shouldBe` Nothing
+
 uTest :: SpecWith ()
 uTest = do
+  itu [("a->b->c", "a->b->c")] ""
+  itu [("a->b", "b->a")] "a=b"
+  itu [("a->b->c", "c->b->a")] "a=c"
+  itu [("b->a->b", "(g->g)->d")] "b=g->g, d=a->g->g"
+  itu' [("c", "a->b->c")]
+  itu' [("a->b->a", "a->a")]
   itu [("a", "b"), ("c", "d")] "a=b, c=d"
   itu [("a", "a"), ("c", "c"), ("d", "d")] ""
   itu [("b->a->b", "(g->g)->d"), ("g", "a->a")] "b=(a->a)->a->a, d=a->(a->a)->a->a, g=a->a"
