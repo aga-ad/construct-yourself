@@ -78,6 +78,8 @@ u set | null set  = pure mempty
 -- Generate equations set from some term
 e :: Context -> Term -> Type -> Maybe (Set Equation)
 e ctx term tpe = e' ctx term tpe ((typeNames tpe) `union` (typeNamesL $ M.elems (getCtx ctx)))
+
+e' :: Context -> Term -> Type -> Set Name -> Maybe (Set Equation)
 e' ctx term tpe booked = case term of
                    Var{..} -> (\x -> singleton (tpe, x)) <$> ctx ! var
                    App m n -> do let new = TVar $ fresh booked
@@ -93,7 +95,7 @@ e' ctx term tpe booked = case term of
                                       e1 <- e' (ctx `mappend` (Context $ M.singleton var new1)) body new2 booked2
                                       return ((tpe, TArr new1 new2) `insert` e1)
 
--- Find all type names in type / list of types / set of equation 
+-- Find all type names in type / list of types / set of equation
 typeNames :: Type -> Set Name
 typeNames (TVar n) = singleton n
 typeNames (TArr a b) = typeNames a `union` typeNames b

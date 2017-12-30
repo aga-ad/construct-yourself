@@ -11,6 +11,7 @@ import qualified Text.Parsec      as TP (parse)
 import           Text.Parsec.Text
 import           Data.Map
 import qualified Data.Set         as S (fromList)
+import           Text.Parsec.Error (ParseError)
 
 main :: IO ()
 main = do
@@ -29,7 +30,7 @@ main = do
     describe "Unification test" uTest
     describe "Equatations test" eTest
 
-unRight (Right a) = a
+
 emptyContext = mempty
 aContext = Context $ singleton "a" $ TVar "a"
 bContext = Context $ singleton "b" $ TVar "b"
@@ -57,10 +58,13 @@ substitutionTest = do
 
 
 
-
+parsePls :: String -> Parser a -> Either ParseError a
 parsePls str parser = TP.parse parser "parser" (pack str)
+
+checkP :: (Show a, Eq a) => Parser a -> String -> a -> Expectation
 checkP parser inputStr result = parsePls inputStr parser `shouldBe` Right result
 
+itTP :: String -> Type -> SpecWith (Arg Expectation)
 itTP input answer = it input $ checkP typeP input answer
 
 typeParserTest :: SpecWith ()
@@ -73,37 +77,44 @@ typeParserTest = do
   itTP " ( ( ( ( ( a ) -> ( ( ( b ) ) ) ) -> ( ( c ) ) ) ) ) " $ TArr (TArr (TVar "a") (TVar "b")) (TVar "c")
   itTP "(a->b)->(a->c)->(a->d)" $ TArr (TArr (TVar "a") (TVar "b")) (TArr (TArr (TVar "a") (TVar "c")) (TArr (TVar "a") (TVar "d")))
 
+itSP :: String -> Substitution -> SpecWith (Arg Expectation)
 itSP input answer = it input $ checkP substitutionP input answer
 
 substitutionParserTest :: SpecWith ()
 substitutionParserTest = do
   itSP "z=y,a=b, c = d , e = a->b->c" $ Substitution $ fromList [("z", TVar "y"), ("a", TVar "b"), ("c", TVar "d"), ("e", TArr (TVar "a") (TArr (TVar "b") (TVar "c")))]
 
+itCP :: String -> Context -> SpecWith (Arg Expectation)
 itCP input answer = it input $ checkP contextP input answer
 
 contextParserTest :: SpecWith ()
 contextParserTest = do
   itCP "a:z->b, b : q -> z  " $ Context $ fromList [("a", TArr (TVar "z") (TVar "b")), ("b", TArr (TVar "q") (TVar "z"))]
 
+itPSmaker :: (Show a, Eq a) => Parser a -> String -> SpecWith (Arg Expectation)
+itPSmaker parser input = it input $ (show (parsePls input parser)) `shouldBe` "Right " ++ input
 
-itPSmaker parser input =  it input $ (show (parsePls input parser)) `shouldBe` "Right " ++ input
-
+itSPS :: String -> SpecWith (Arg Expectation)
 itSPS = itPSmaker substitutionP
+
 substitutionPSTest :: SpecWith ()
 substitutionPSTest = do
   itSPS "x = y"
   itSPS "x = y, y = z"
   itSPS "a = (x -> x) -> x -> x, x = y -> y, y = z"
 
-
+itCPS :: String -> SpecWith (Arg Expectation)
 itCPS = itPSmaker contextP
+
 contextPSTest :: SpecWith ()
 contextPSTest = do
   itCPS "x : y"
   itCPS "x : y, y : z"
   itCPS "x : a, y : (b -> b) -> b"
 
+itTPS :: String -> SpecWith (Arg Expectation)
 itTPS = itPSmaker termP
+
 termPSTest :: SpecWith ()
 termPSTest = do
   itTPS "l0l"
@@ -127,7 +138,7 @@ termPSTest = do
   itTPS "x a b \\c.d"
   itTPS "a b (c d)"
 
-
+itCS :: String -> String -> String -> SpecWith ()
 itCS ssbst sctx sres = let (Right (sbst, ctx, res)) = do sbst <- parsePls ssbst substitutionP
                                                          ctx <- parsePls sctx contextP
                                                          res <- parsePls sres contextP
@@ -142,7 +153,7 @@ contextSubstitutionTest = do
   itCS "t1=a1, t2=a2->a2" "x:t1, y:t2, z:t2->t1" "x:a1, y:a2->a2, z:(a2->a2)->a1"
   itCS "t2=a2->a2" "x:t1, y:t2, z:t2->t1" "x:t1, y:a2->a2, z:(a2->a2)->t1"
 
-
+itTS :: String -> String -> String -> SpecWith (Arg Expectation)
 itTS ssbst st sres = let (Right (sbst, t, res)) = do sbst <- parsePls ssbst substitutionP
                                                      t <- parsePls st typeP
                                                      res <- parsePls sres typeP
@@ -157,6 +168,7 @@ typeSubstitutionTest = do
   itTS "t1=a->a, t2=b->b->b, t4=a" "t1->(t2->t3)->t4" "(a->a)->((b->b->b)->t3)->a"
   itTS "t1=t1, t2=t2, t4=t4, t3=t3, t5=t5" "(t1->(t2->t3))->t4" "(t1->(t2->t3))->t4"
 
+itCompose :: String -> String -> String -> SpecWith (Arg Expectation)
 itCompose ss st sres = let (Right (s, t, res)) = do s <- parsePls ss substitutionP
                                                     t <- parsePls st substitutionP
                                                     res <- parsePls sres substitutionP
@@ -171,17 +183,19 @@ composeTest = do
   itCompose "" "a=x2" "a=x2"
   itCompose "a=x->y->x, b=(y->y)->x->z" "x=q->q, y=q->q, z=q" "x=q->q, y=q->q, z=q, a=(q->q)->(q->q)->q->q, b=((q->q)->q->q)->(q->q)->q"
 
-
+parseEq :: (String, String) -> Either ParseError (Type, Type)
 parseEq (s1, s2) = do t1 <- parsePls s1 typeP
                       t2 <- parsePls s2 typeP
                       return (t1, t2)
 
+itu :: [(String, String)] -> String -> SpecWith (Arg Expectation)
 itu sl sres = let (Right (el, res)) = do lst <- mapM parseEq sl
                                          sub <- parsePls sres substitutionP
                                          return (lst, sub)
               in it (show sl ++ "  =>  " ++ sres) $ do u (S.fromList el) `shouldBe` Just res
                                                        Prelude.map (\(a, b) -> substitute res a) el `shouldBe` Prelude.map (\(a, b) -> substitute res b) el
 
+itu' :: [(String, String)] -> SpecWith (Arg Expectation)
 itu' sl = let (Right el) = mapM parseEq sl
           in it (show sl ++ "  !!!") $ u (S.fromList el) `shouldBe` Nothing
 
@@ -197,6 +211,7 @@ uTest = do
   itu [("a", "a"), ("c", "c"), ("d", "d")] ""
   itu [("b->a->b", "(g->g)->d"), ("g", "a->a")] "b=(a->a)->a->a, d=a->(a->a)->a->a, g=a->a"
 
+ite :: String -> String -> String -> String -> SpecWith (Arg Expectation)
 ite sctx sterm st sres = let (Right (ctx, term, t, res)) = do s <- parsePls sctx contextP
                                                               term <- parsePls sterm termP
                                                               t <- parsePls st typeP
