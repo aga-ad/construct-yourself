@@ -4,4 +4,4 @@ stack ghci
 spp %lambda string%  
 
 for example:  
-spp "\\x.x"  
+spp "\\\\x.x"  
