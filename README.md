@@ -1,7 +1,7 @@
-usage:
-stack ghci
-...
-spp %lambda string%
+usage:  
+stack ghci  
+...  
+spp %lambda string%  
 
-for example:
-spp "\\x.x"
+for example:  
+spp "\\x.x"  
