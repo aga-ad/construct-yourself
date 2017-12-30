@@ -23,6 +23,7 @@ library
                      , Construction.Internal.Parser
                      , Construction.Internal.TypeFunctions
                      , Construction.Internal.TypeParser
+                     , Construction.Internal.Stuff
 
                      , Tasks.GADT_1.GADTExpr
                      , Tasks.GADT_1.GADTParser
