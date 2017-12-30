@@ -14,30 +14,6 @@ import qualified Data.Set         as S (fromList)
 
 main :: IO ()
 main = do
-  --print $ Substitution $ fromList [("z", TVar "y"), ("a", TVar "b"), ("c", TVar "d"), ("e", TArr (TVar "a") (TArr (TVar "b") (TVar "c")))]
-  --print $ (Lam "x0" (Lam "x" (App (Var "x") (Var "x1"))))
-  -- print $ u1 (parseType "b->a->b") (parseType "(g->g)->d")
-  --print $ e (parsePls "x:t1, y:t2" contextP) (parsePls "\\a.a x y" termP) (parsePls "t" typeP)
-  {-print $ do cont <- parsePls "x:t1, y:t2" contextP
-             term <- parsePls "\\a.a x y" termP
-             tpe <- parsePls "t" typeP
-             return (e cont term tpe)
-  print $ do cont <- parsePls "" contextP
-             term <- parsePls "\\x.\\y.x y" termP
-             tpe <- parsePls "t" typeP
-             return (e cont term tpe) -}
-  print $ do cont <- parsePls "x:a1->a3, y:a2, z:a1->a2" contextP
-             term <- parsePls "(\\a.a) (\\a.a x) (\\a.a)" termP
-             tpe <- parsePls "t" typeP
-             return $ do ee <- e cont term tpe
-                         return (ee, u ee)
-
-  print $ pp (unRight (parsePls "(\\a.a) (\\a.a) (\\a.a)" termP))
-
-  -- print $ do s <- parsePls "x=a, y=b" substitutionP
-  --            t <- parsePls "a=t1, b=t2" substitutionP
-  --            return (compose s t)
-
   hspec $ do
     describe "Context monoid test" contextTest
     describe "Substitution monoid test" substitutionTest
